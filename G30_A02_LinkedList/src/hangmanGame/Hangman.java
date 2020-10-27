@@ -9,12 +9,11 @@ import linked_data_structures.SinglyLinkedList;
 public class Hangman implements java.io.Serializable {
 
 	private String word;
-	// private StateOfGame state;
+
 	private SinglyLinkedList<Character> lettersToBeGuessed;
 	private SinglyLinkedList<Character> lettersOfMistake;
 	private SinglyLinkedList<Character> guessedLetters;
-	// private transient List<StateChangeListener> listeners;
-	// private int numOfGuessed;
+
 	private int numberOfMistakes;
 
 	public Hangman(String word) {
@@ -83,9 +82,8 @@ public class Hangman implements java.io.Serializable {
 			this.lettersOfMistake.add(letter);
 			numberOfMistakes++;
 
-//			if (this.lettersOfMistake.getLength() > 5) {
-//				setState(StateOfGame.LOSS);
-//			}
+
+
 		}
 
 		return success;
