@@ -9,23 +9,22 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.swing.*;
 import java.awt.font.TextAttribute;
 import java.io.IOException;
-
 import javax.swing.border.EmptyBorder;
+import java.awt.Color;
 
 public class MainFrame extends JFrame {
 
-	private JPanel contentPane;
-	private JPanel wordPanel;
-	private JPanel nextPanel;
+	private JPanel mainPanel;
+	private JPanel letterPanel;
+	private JPanel newPanel;
 	private JPanel keyboardPanel;
-	private JPanel picturePanel;
-	private JLabel wordLabel;
+	private JPanel dispPanel;
+	private JLabel lettersLabel;
 	private ArrayList<JButton> keyButtons;
-	private HangmanRunner lobby;
+	private HangmanRunner runner;
 	private Hangman currentGame;
 	private Player currentPlayer;
 
@@ -45,22 +44,27 @@ public class MainFrame extends JFrame {
 
 	public MainFrame() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 360, 640);
+		setBounds(100, 100, 450, 650);
 		this.setResizable(false);
 
-		contentPane = new JPanel();
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		contentPane.setLayout(new BorderLayout(0, 0));
-		setContentPane(contentPane);
+		mainPanel = new JPanel();
+		mainPanel.setBackground(new Color(175, 238, 238));
+		mainPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+		mainPanel.setLayout(new BorderLayout(0, 0));
+		setContentPane(mainPanel);
 
-		picturePanel = new JPanel();
-		contentPane.add(picturePanel, BorderLayout.CENTER);
+		dispPanel = new JPanel();
+		dispPanel.setBackground(new Color(255, 255, 255));
+		mainPanel.add(dispPanel, BorderLayout.CENTER);
 
-		contentPane.add(new JLabel("Hangman", SwingConstants.CENTER), BorderLayout.NORTH);
+		JLabel label = new JLabel("Hangman", SwingConstants.CENTER);
+		label.setForeground(Color.DARK_GRAY);
+		label.setFont(new Font("Snap ITC", Font.BOLD, 16));
+		mainPanel.add(label, BorderLayout.NORTH);
 
-		createMenu();
+		makeMenu();
 
-		createKeyboardPanel();
+		keyboardPanel();
 
 		try {
 			initialize();
@@ -74,193 +78,183 @@ public class MainFrame extends JFrame {
 	}
 
 	private void initialize() throws ClassNotFoundException, IOException {
-		lobby = new HangmanRunner();
+
+		runner = new HangmanRunner();
+		String name = login();
 
 		if (currentGame == null)
-			currentGame = lobby.playGame("zrt");
+			currentGame = runner.playGame(name);
 
-//		Character c = currentGame.hint();
-//		guess(c);
+		load(currentGame);
 
-//		render(currentGame);
-
-		checkGameStatus();
+		checkStatus();
 	}
 
-	private void render(Hangman game) {
-		// set picture
-		showPicture(game.getLettersOfMistake().getLength());
+	private String login() {
+		Scoreboard board = runner.getScoreboard();
+		String[] names = new String[board.getNumPlayers()];
 
-		// reset word blanks
-		wordLabel.setText(game.getGuessedLetters().toString());
+		for (int i = 0; i < board.getNumPlayers(); i++) {
+			names[i] = board.getNextPlayer(i).getName();
+		}
 
-		// reset keyboard
+		LoginFrame dialog = new LoginFrame(names);
+		dialog.setModal(true);
+		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		dialog.setVisible(true);
+		return dialog.getName();
+	}
+
+	private void load(Hangman game) {
+
+		display(game.getLettersOfMistake().getLength());
+
+		lettersLabel.setText(game.getDisplayString().toString());
+
 		keyboardPanel.setVisible(true);
 		for (JButton button : keyButtons) {
 			char c = button.getText().charAt(0);
 			boolean guessed = game.getGuessedLetters().contains(c) || game.getLettersOfMistake().contains(c);
 			button.setEnabled(!guessed);
 		}
-		nextPanel.setVisible(false);
+		newPanel.setVisible(false);
 	}
-
 
 	private void guess(char letter) {
-		int status = currentGame.statusGame();
+		int status = currentGame.getStatus();
+
 		if (status == 0) {
 			if (currentGame.guessLetter(letter)) {
-				wordLabel.setText(currentGame.getLettersToBeGuessed().toString());
+				lettersLabel.setText(currentGame.getDisplayString().toString());
 			} else {
-				showPicture(currentGame.getLettersOfMistake().getLength());
+				display(currentGame.getLettersOfMistake().getLength());
 			}
 		}
-		checkGameStatus();
+		checkStatus();
 	}
 
-	private void checkGameStatus() {
-		int status = currentGame.statusGame();
+	private void checkStatus() {
+		int status = currentGame.getStatus();
 		if (status == 1) {
 
-			showMessage("Congratulations!", "You won.");
+			dispMessege("Congratulations!", "You won.");
 		} else if (status == -1) {
 
-			showMessage("\nGame Over!", "Loss");
+			dispMessege("\nGame Over!", "Loss");
 
-			wordLabel.setText(currentGame.getWord().toString());
+			lettersLabel.setText(currentGame.getWord().toString());
 		}
 
-		// Game Over
 		if (status != 0) {
 			keyboardPanel.setVisible(false);
-			boolean hasNext = lobby.hasNextGame();
-			nextPanel.setVisible(hasNext);
+			boolean hasNext = runner.hasNextGame();
+			newPanel.setVisible(hasNext);
 
 			if (!hasNext) {
-				showMessage("Congratulations! ALL Done", "Won");
+				dispMessege("Congratulations! ALL Done", "Won");
 			}
 		}
 	}
 
-	private void showPicture(int index) {
+	private void display(int index) {
 
 		String source = String.format("images/hangman%d.png", index);
-		clearPanel(picturePanel);
-		picturePanel.add(new JLabel(new ImageIcon(source)));
+		clear(dispPanel);
+		dispPanel.add(new JLabel(new ImageIcon(source)));
 	}
 
-	private void clearPanel(JPanel panel) {
+	private void clear(JPanel panel) {
 		panel.removeAll();
 		panel.revalidate();
 		panel.repaint();
 	}
 
-	// alphabet keyboard
-	private void createKeyboardPanel() {
-		// create Word Panel
-		wordPanel = new JPanel();
-		wordPanel.setLayout(new BoxLayout(wordPanel, BoxLayout.X_AXIS));
-		wordPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-		wordLabel = new JLabel();
-		wordLabel.setBorder(new EmptyBorder(0, 10, 0, 0));
-		Map<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
-		attributes.put(TextAttribute.TRACKING, 0.3);
-
-		wordLabel.setFont(new Font(wordLabel.getFont().getName(), Font.PLAIN, 28));
-		wordLabel.setFont(wordLabel.getFont().deriveFont(attributes));
-		wordPanel.add(wordLabel);
-
-		// create Keyboard Panel
-		keyboardPanel = new JPanel();
-		keyboardPanel.setLayout(new GridLayout(4, 7, 0, 0));
-		keyboardPanel.setSize(360, 280);
-
-		keyButtons = new ArrayList<>();
-
-		for (char alphabet = 'A'; alphabet <= 'Z'; alphabet++) {
-			final char letter = Character.toLowerCase(alphabet);
-			JButton keyButton = new JButton(Character.toString(alphabet));
-			keyButtons.add(keyButton);
-			keyButton.setSize(50, 50);
-			keyboardPanel.add(keyButton);
-			if (alphabet == 'U')
-				keyboardPanel.add(new JLabel());
-
-			keyButton.addActionListener(l -> {
-				keyButton.setEnabled(false);
-				guess(letter);
-			});
-		}
-
-		nextPanel = new JPanel();
-		JButton nextButton = new JButton("Next");
-		nextButton.addActionListener((l) -> {
-			System.out.println("new game");
-			render(currentGame = lobby.nextGame());
-		});
-		nextPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		nextPanel.setVisible(false);
-		nextPanel.add(nextButton);
-
-		JPanel southPanel = new JPanel();
-		southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.Y_AXIS));
-		southPanel.add(wordPanel);
-		southPanel.add(Box.createVerticalStrut(50));
-		southPanel.add(keyboardPanel);
-		southPanel.add(nextPanel);
-
-		contentPane.add(southPanel, BorderLayout.SOUTH);
-	}
-
-	private void createMenu() {
+	private void makeMenu() {
 		JMenuBar menuBar = new JMenuBar();
+		menuBar.setForeground(new Color(0, 255, 255));
+		menuBar.setBackground(new Color(240, 255, 255));
 		JMenu gameMenu = new JMenu("Game");
-		JMenuItem newMenuItem = new JMenuItem("New");
+		gameMenu.setBackground(new Color(175, 238, 238));
+		gameMenu.setForeground(new Color(0, 0, 0));
+		JMenuItem newMenuItem = new JMenuItem("New Game");
+		newMenuItem.setBackground(new Color(0, 250, 154));
+		newMenuItem.setForeground(new Color(47, 79, 79));
+		JMenuItem boradMenuItem = new JMenuItem("Scoreboard");
+		boradMenuItem.setForeground(new Color(0, 0, 139));
+		boradMenuItem.setBackground(new Color(240, 255, 255));
+		JMenuItem hintMenuItem = new JMenuItem("Hint");
+		hintMenuItem.setBackground(new Color(0, 255, 255));
 		JMenuItem saveMenuItem = new JMenuItem("Save");
-		JMenuItem undoMenuItem = new JMenuItem("Undo");
+		saveMenuItem.setBackground(new Color(240, 255, 255));
 		JMenuItem exitMenuItem = new JMenuItem("Exit");
+		exitMenuItem.setBackground(new Color(0, 255, 127));
 
 		JMenu helpMenu = new JMenu("Help");
+		helpMenu.setBackground(new Color(0, 255, 255));
 		JMenuItem helpMenuItem = new JMenuItem("Instructions");
 		JMenuItem aboutMenuItem = new JMenuItem("About");
+		aboutMenuItem.setBackground(new Color(240, 255, 255));
 
 		setJMenuBar(menuBar);
 		menuBar.add(gameMenu);
 		gameMenu.add(newMenuItem);
+		gameMenu.add(boradMenuItem);
+		gameMenu.add(hintMenuItem);
 		gameMenu.add(saveMenuItem);
-		gameMenu.addSeparator();
-		gameMenu.add(undoMenuItem);
 		gameMenu.addSeparator();
 		gameMenu.add(exitMenuItem);
 
-		saveMenuItem.addActionListener(e -> {
-
+		boradMenuItem.addActionListener(l -> {
+			ScoreBoardFrame dialog = new ScoreBoardFrame(runner.getScoreboard());
+			dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+			dialog.setVisible(true);
 		});
 
+		hintMenuItem.addActionListener(l -> {
+			if (currentGame != null) {
+				currentGame.hint();
+				load(currentGame);
+			}
+		});
 
+		saveMenuItem.addActionListener(e -> {
+			try {
+				runner.save();
+				dispMessege("Game saved successfully！", "Save Game");
+			} catch (IOException ex) {
+				ex.printStackTrace();
+				showMessage(ex.getMessage(), "Cann't Save Game！", JOptionPane.WARNING_MESSAGE);
+			}
+		});
+
+		newMenuItem.addActionListener(e -> {
+			try {
+				if (runner.hasNextGame()) {
+					currentGame = runner.nextGame();
+					load(currentGame);
+				} else {
+					dispMessege("No more...", "No new game");
+				}
+
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+		});
 
 		exitMenuItem.addActionListener(e -> {
+			try {
+				runner.save();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			this.processEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
 
 		});
 
 		menuBar.add(helpMenu);
-		helpMenu.add(helpMenuItem);
-		helpMenu.add(aboutMenuItem);
-		
-		JMenu mnNewMenu = new JMenu("About");
-		menuBar.add(mnNewMenu);
 
-		helpMenuItem.addActionListener(e -> {
-			JTextArea area = new JTextArea("");
-			area.setSize(400, 300);
-			area.setWrapStyleWord(true);
-			area.setAutoscrolls(true);
-			area.setLineWrap(true);
-		//	area.setText(
-					
-		//	showMessage(area, "Help");
-		});
+		helpMenu.add(aboutMenuItem);
 
 		aboutMenuItem.addActionListener(e -> {
 			JPanel panel = new JPanel();
@@ -274,11 +268,72 @@ public class MainFrame extends JFrame {
 			panel.add(new JLabel("School:"));
 			panel.add(new JLabel("Heritage College"));
 
-//			showMessage(panel, "About");
+			dispMessege(panel, "About");
 		});
 	}
 
-	private void showMessage(Object message, String title) {
+	private void keyboardPanel() {
+
+		letterPanel = new JPanel();
+		letterPanel.setBackground(new Color(175, 238, 238));
+		letterPanel.setLayout(new BoxLayout(letterPanel, BoxLayout.X_AXIS));
+		letterPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		lettersLabel = new JLabel();
+		lettersLabel.setForeground(new Color(0, 0, 0));
+		lettersLabel.setBackground(new Color(175, 238, 238));
+		lettersLabel.setBorder(new EmptyBorder(0, 10, 0, 0));
+		Map<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
+		attributes.put(TextAttribute.TRACKING, 0.3);
+
+		lettersLabel.setFont(new Font(lettersLabel.getFont().getName(), Font.PLAIN, 28));
+		lettersLabel.setFont(lettersLabel.getFont().deriveFont(attributes));
+		letterPanel.add(lettersLabel);
+
+		keyboardPanel = new JPanel();
+		keyboardPanel.setBackground(new Color(175, 238, 238));
+		keyboardPanel.setLayout(new GridLayout(5, 6, 0, 0));
+		keyboardPanel.setSize(360, 280);
+
+		keyButtons = new ArrayList<>();
+
+		for (char alphabet = 'A'; alphabet <= 'Z'; alphabet++) {
+			final char letter = Character.toLowerCase(alphabet);
+			JButton keyButton = new JButton(Character.toString(alphabet));
+			keyButtons.add(keyButton);
+			keyButton.setSize(50, 50);
+			keyboardPanel.add(keyButton);
+			keyButton.addActionListener(l -> {
+				keyButton.setEnabled(false);
+				guess(letter);
+
+			});
+		}
+
+		newPanel = new JPanel();
+		newPanel.setBackground(new Color(175, 238, 238));
+		JButton nextButton = new JButton("Next");
+		nextButton.setBackground(new Color(127, 255, 212));
+		nextButton.addActionListener((l) -> {
+			System.out.println("new game");
+			load(currentGame = runner.nextGame());
+		});
+		newPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		newPanel.setVisible(false);
+		newPanel.add(nextButton);
+
+		JPanel southPanel = new JPanel();
+		southPanel.setBackground(new Color(175, 238, 238));
+		southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.Y_AXIS));
+		southPanel.add(letterPanel);
+		southPanel.add(Box.createVerticalStrut(50));
+		southPanel.add(keyboardPanel);
+		southPanel.add(newPanel);
+
+		mainPanel.add(southPanel, BorderLayout.SOUTH);
+	}
+
+	private void dispMessege(Object message, String title) {
 		showMessage(message, null, JOptionPane.INFORMATION_MESSAGE);
 	}
 
@@ -286,6 +341,19 @@ public class MainFrame extends JFrame {
 		JOptionPane.showMessageDialog(this, message, title, messageType);
 	}
 
-	
+	public void close(WindowEvent e) {
+		String comfirmButtons[] = { "Yes", "No" };
+		int PromptResult = JOptionPane.showOptionDialog(null, "Are you sure you want to exit game?", "Hangman",
+				JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, comfirmButtons, comfirmButtons[1]);
+		if (PromptResult == 0) {
+			try {
+				runner.save();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			System.exit(0);
+		}
+
+	}
 
 }

@@ -3,7 +3,7 @@ package linked_data_structures;
  *   The structure of a node in the simple doubly linked
  *   list introduced in the chapter on Fundamental Data Structures.
  */
-public class DLNode<E> extends SLNode<E> {
+public class DLNode<E> extends SLNode<E> implements java.io.Serializable{
   private DLNode<E> predecessor; // link to the predecessor
 
   /**

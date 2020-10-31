@@ -4,7 +4,7 @@ package linked_data_structures;
  * Description: A simple singly-linked list introduced in the chapter on
  * Fundamental Data Structures.
  */
-public class DoublyLinkedList<E>
+public class DoublyLinkedList<E> implements java.io.Serializable
 {
 	private int length; // the number of elements in the linked list
 	protected DLNode<E> head; // access point to the linked list
@@ -122,7 +122,7 @@ public class DoublyLinkedList<E>
 		E theElement = target.getElement();
 		DLNode<E> pred = target.getPredecessor();
 
-		// link target to cursorÕs successor
+		// link target to cursorï¿½s successor
 		pred.setSuccessor(target.getSuccessor());
 		((DLNode<E>) target.getSuccessor()).setPredecessor(pred);
 

@@ -1,27 +1,45 @@
 package hangmanGame;
 
+
+import java.io.Serializable;
 import java.util.Random;
 
 import java.util.StringTokenizer;
 
 import linked_data_structures.SinglyLinkedList;
 
-public class Hangman implements java.io.Serializable {
+public class Hangman implements Serializable {
 
 	private String word;
-
+	 private int status;
 	private SinglyLinkedList<Character> lettersToBeGuessed;
 	private SinglyLinkedList<Character> lettersOfMistake;
 	private SinglyLinkedList<Character> guessedLetters;
-
 	private int numberOfMistakes;
-
-	public Hangman(String word) {
+	private Player player;
+	
+	public Hangman() {
 		this.guessedLetters = new SinglyLinkedList<>();
 		this.lettersOfMistake = new SinglyLinkedList<>();
 		this.lettersToBeGuessed = new SinglyLinkedList<Character>();
-		this.word = word;
+		this.status = 0;
+		
 
+	}
+
+	public Hangman(String word,Player player) {
+		this.guessedLetters = new SinglyLinkedList<>();
+		this.lettersOfMistake = new SinglyLinkedList<>();
+		this.lettersToBeGuessed = new SinglyLinkedList<Character>();
+		this.player = player;
+		this.word = word;
+		this.status = 0;
+		setLettersToBeGuessed();
+
+	}
+
+	public int getStatus() {
+		return status;
 	}
 
 	public String getWord() {
@@ -30,6 +48,10 @@ public class Hangman implements java.io.Serializable {
 
 	public void setWord(String word) {
 		this.word = word;
+	}
+
+	public int getNumberOfMistakes() {
+		return numberOfMistakes;
 	}
 
 	public SinglyLinkedList<Character> getLettersOfMistake() {
@@ -46,13 +68,12 @@ public class Hangman implements java.io.Serializable {
 
 	public void setLettersToBeGuessed() {
 		String word = RemoveSpace(this.getWord());
-		;
 		if (word.length() != 0) {
 			for (int i = 0; i < word.length(); i++) {
 				if (Character.isLetter(word.charAt(i)) || word.charAt(i) == '-' || word.charAt(i) == ' ') {
 
 					this.lettersToBeGuessed.add(word.charAt(i));
-					System.out.print(word.charAt(i));
+				//	System.out.print(word.charAt(i));
 				}
 
 			} // for
@@ -62,7 +83,8 @@ public class Hangman implements java.io.Serializable {
 	}// setLettersToBeGuessed()
 
 	public boolean guessLetter(char letter) {
-		// numOfGuessed ++;
+		
+		
 		letter = Character.toLowerCase(letter);
 		boolean success = false;
 		for (int i = 0; i < lettersToBeGuessed.getLength(); i++)
@@ -70,20 +92,28 @@ public class Hangman implements java.io.Serializable {
 				success = true;
 
 		if (success) {
+			
 
 			this.guessedLetters.add(letter);
 
-//			if (getLettersOfNotGuessed().getLength() == 0) {
-//
-//				setState(StateOfGame.WIN);
-//			}
+			if (getRemainingLetters().getLength() == 0) {
+
+				this.status = 1;
+				player.setNumberGamesPlayed(player.getNumberGamesPlayed()+1);
+	            player.setNumberGamesWon(player.getNumberGamesWon()+1);
+				
+		}
 		} else {
 
 			this.lettersOfMistake.add(letter);
 			numberOfMistakes++;
-
-
-
+            
+			if (this.lettersOfMistake.getLength() > 5) {
+				this.status = -1;
+				player.setNumberGamesPlayed(player.getNumberGamesPlayed()+1);
+	            
+				
+			}
 		}
 
 		return success;
@@ -117,22 +147,10 @@ public class Hangman implements java.io.Serializable {
 
 		}
 		System.out.println("\n" + "hint:" + hint);
+		guessLetter(hint);
 		return hint;
 
 	}// hint()
-
-	public int statusGame() {
-		int status = 0; // pending
-
-		if (getRemainingLetters().getLength() == 0) {
-			status = 1; // win
-		}
-
-		if (numberOfMistakes > 5) {
-			status = -1; // lose
-		}
-		return status;
-	}// statusGame()
 
 	public SinglyLinkedList<Character> getDisplayString() {
 		SinglyLinkedList<Character> displayString = new SinglyLinkedList<Character>();
@@ -166,61 +184,88 @@ public class Hangman implements java.io.Serializable {
 		return str.trim();
 	}// delSpace(String)
 
-	public static void main(String[] args) {
-
-		String wString = "ni  //????;{:{{>}|   Hao!@##$%%^&*(()_++~!1123-mang;3454365467'''55";
-		// String wString = "ahh";
-		Hangman hangman = new Hangman(wString);
-
-		System.out.println(hangman.getWord());
-
-		hangman.setLettersToBeGuessed();
-
-		hangman.guessLetter('n');
-		for (int i = 0; i < hangman.getGuessedLetters().getLength(); i++) {
-
-			System.out.print("#" + hangman.getGuessedLetters().getElementAt(i));
-		}
-
-		for (int i = 0; i < hangman.getRemainingLetters().getLength(); i++) {
-
-			System.out.print("@" + hangman.getRemainingLetters().getElementAt(i));
-		}
-		hangman.hint();
-
-		hangman.getDisplayString();
-		for (int i = 0; i < hangman.getDisplayString().getLength(); ++i) {
-
-			System.out.print(hangman.getDisplayString().getElementAt(i));
-		}
+//	public static void main(String[] args) {
+//
+//		String wString = "Hell2#o   -zrt!!";
+//		
+//	
+//		Hangman hangman = new Hangman( );
+//		hangman.setWord(wString);
 		
-		hangman.guessLetter('z');
-		for (int i = 0; i < hangman.getGuessedLetters().getLength(); i++) {
+//       
+//		System.out.println(hangman.getWord());
+//		hangman.setLettersToBeGuessed();
+//		SinglyLinkedList<Character> word = hangman.getLettersToBeGuessed();
+//		String w = "";
+//		for (int i = word.getLength()-1; i >=0; i--) {
+//		     w += word.getElementAt(i);
+//		}
+//		System.out.println(w);
+//		
+//		hangman.guessLetter('z');
+//		SinglyLinkedList<Character> guessed = hangman.getGuessedLetters();
+//		String g = "";
+//		for (int i = 0; i<guessed.getLength(); i++) {
+//		     g += guessed.getElementAt(i);
+//		}
+//		
+//		hangman.guessLetter('t');
+//		
+//		SinglyLinkedList<Character> display = hangman.getDisplayString();
+//		String dispString = "";
+//		for (int i = 0; i<display.getLength(); i++) {
+//		     dispString += display.getElementAt(i);
+//		}
+//		
+//		
+//		System.out.println(dispString);
+//		hangman.setLettersToBeGuessed();
+//
+//		hangman.guessLetter('n');
+//		for (int i = 0; i < hangman.getGuessedLetters().getLength(); i++) {
+//
+//			System.out.print("#" + hangman.getGuessedLetters().getElementAt(i));
+//		}
+//
+//		for (int i = 0; i < hangman.getRemainingLetters().getLength(); i++) {
+//
+//			System.out.print("@" + hangman.getRemainingLetters().getElementAt(i));
+//		}
+//		hangman.hint();
+//
+//		hangman.getDisplayString();
+//		for (int i = 0; i < hangman.getDisplayString().getLength(); ++i) {
+//
+//			System.out.print(hangman.getDisplayString().getElementAt(i));
+//		}
+//		
+//		hangman.guessLetter('z');
+//		for (int i = 0; i < hangman.getGuessedLetters().getLength(); i++) {
+//
+//			System.out.print("#" + hangman.getGuessedLetters().getElementAt(i));
+//		}
+//
+//		for (int i = 0; i < hangman.getRemainingLetters().getLength(); i++) {
+//
+//			System.out.print("@" + hangman.getRemainingLetters().getElementAt(i));
+//		}
+//		hangman.hint();
+//
+//		hangman.getDisplayString();
+//		for (int i = 0; i < hangman.getDisplayString().getLength(); ++i) {
+//
+//			System.out.print(hangman.getDisplayString().getElementAt(i));
+//		}
+//		
+//		for (int i = 0; i < hangman.getLettersOfMistake().getLength(); ++i) {
+//
+//			System.out.print("!"+hangman.getLettersOfMistake().getElementAt(i));
+//		}
+//		
+//		System.out.print("\nwrong ="+hangman.numberOfMistakes);
+//		
+//		
 
-			System.out.print("#" + hangman.getGuessedLetters().getElementAt(i));
-		}
-
-		for (int i = 0; i < hangman.getRemainingLetters().getLength(); i++) {
-
-			System.out.print("@" + hangman.getRemainingLetters().getElementAt(i));
-		}
-		hangman.hint();
-
-		hangman.getDisplayString();
-		for (int i = 0; i < hangman.getDisplayString().getLength(); ++i) {
-
-			System.out.print(hangman.getDisplayString().getElementAt(i));
-		}
-		
-		for (int i = 0; i < hangman.getLettersOfMistake().getLength(); ++i) {
-
-			System.out.print("!"+hangman.getLettersOfMistake().getElementAt(i));
-		}
-		
-		System.out.print("\nwrong ="+hangman.numberOfMistakes);
-		
-		
-
-	}// main()
+//	}// main()
 
 }// class Hangman

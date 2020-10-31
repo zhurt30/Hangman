@@ -1,38 +1,49 @@
 package hangmanGame;
 
+import java.io.Serializable;
+
 import linked_data_structures.DoublyLinkedList;
 
-public class Scoreboard extends DoublyLinkedList<Player> {
-	
-	private int numPlayers;
+public class Scoreboard  implements Serializable {
 	
 	
-	public int getNumPlayers() {
-		return numPlayers;
+	private DoublyLinkedList<Player> playerList;
+	
+	
+	public DoublyLinkedList<Player> getPlayerList() {
+		return playerList;
 	}
 
-	public void setNumPlayers(int numPlayers) {
-		this.numPlayers = numPlayers;
+	public int getNumPlayers() {
+		return playerList.getLength();
 	}
+
 
 	public Scoreboard() {
 		super();
+		this.playerList =new DoublyLinkedList<Player>();
 	}
 	
 	public Player addPlayer(String name) {
 		
-		Player player = new Player(name);
-		boolean exist = false;
-		for(int i =0 ; i < this.getLength() ; ++i) {
-			if(this.getElementAt(i).getName().equals(name)) {
-				player = this.getElementAt(i);
-				exist = true;
+		
+		Player player = null;
+		
+		for(int i =0 ; i < playerList.getLength() ; ++i) {
+			if(playerList.getElementAt(i).getName().equals(name)) {
+				player = playerList.getElementAt(i);
 				break;
 			} 	
 		}
-		if(!exist) {
-			this.add(player);
-			numPlayers++;
+		if(player==null) {
+			 player = new Player(name);
+			int index =0;
+			for(int i =0 ; i < playerList.getLength() ; ++i) {
+				if(name.compareToIgnoreCase(playerList.getElementAt(i).getName())<0)
+					index= i;
+				} 
+			playerList.add(player, index);
+			
 		}	
 			
 		return player;
@@ -40,20 +51,20 @@ public class Scoreboard extends DoublyLinkedList<Player> {
 	
 	public Player getNextPlayer(int index) {
 		
-		Player player = new Player();
-		if(index <numPlayers-1)
-				player = this.getElementAt(index);
+		Player player = null;
+		if(index <getNumPlayers())
+				player = playerList.getElementAt(index);
 		return player;
 	}
 	
 	public void gamePlayed(String name, boolean winOrLose) {
-		Player player = new Player();
-		int gameTimes = player.getNumberGamesPlayed();
-		int wonTimes = player.getNumberGamesWon();
-		player.setNumberGamesPlayed(gameTimes+1);
-		if(winOrLose)
-			player.setNumberGamesWon(wonTimes+1);	
+		Player player = addPlayer(name);
+		player.setNumberGamesPlayed(player.getNumberGamesPlayed() + 1);
+		if (winOrLose)
+			player.setNumberGamesWon(player.getNumberGamesWon() + 1);
 	}
+	
+
 
 
 }

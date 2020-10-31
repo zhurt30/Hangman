@@ -5,10 +5,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import hangman.HangmanGame;
 import linked_data_structures.SinglyLinkedList;
 
 
@@ -22,6 +22,7 @@ public class HangmanRunner {
 
 	public HangmanRunner() throws IOException, ClassNotFoundException {
 		DEFAULT_DICTIONARY = new Dictionary();
+		
 
 		scoreboard = loadScoreboard();
 
@@ -29,42 +30,31 @@ public class HangmanRunner {
 			scoreboard = new Scoreboard();
 	}
 
-	public Hangman playGame() throws FileNotFoundException, ClassNotFoundException, IOException {
-		if (currentPlayer == null)
-			throw new NullPointerException("No player.");
-
-		return playGame(currentPlayer.getName());
-
-	}
+	
 
 	public Hangman playGame(String playerName) throws FileNotFoundException, ClassNotFoundException, IOException {
 
 		if (currentPlayer == null || !currentPlayer.getName().equalsIgnoreCase(playerName)) {
 			currentPlayer = scoreboard.addPlayer(playerName);
-
+			
+			
 			dictionary = loadDictionary();
+		
 
 			currentGame = loadGame();
 
 		}
 
-		// no previous game or game is over, will to create new game
-		if (currentGame == null || currentGame.statusGame() != 0) {
+	
+		if (currentGame == null || currentGame.getStatus() != 0) {
 			if (dictionary.hasNextWord()) {
 				String word = dictionary.getNextWord();
-				currentGame = new Hangman(word);
+				currentGame = new Hangman(word,currentPlayer);
 			}
 		}
 
 	
-		if (currentGame != null) {
-
-				if (currentGame.statusGame() == 1)
-					scoreboard.gamePlayed(currentPlayer.getName(), true);
-				else
-					scoreboard.gamePlayed(currentPlayer.getName(), false);
-
-		}
+		
 
 		return currentGame;
 	}
@@ -83,12 +73,9 @@ public class HangmanRunner {
 
 		System.out.println(currentGame.getWord());
 		
-		int index = dictionary.indexOf(currentGame.getWord());
-		if (++index < dictionary.getLength()) {
-			SinglyLinkedList<Character> word = dictionary.getElementAt(index);
-			currentGame = new Hangman(word);
-		} else
-			currentGame = null;
+			String word = dictionary.getNextWord() ;
+			currentGame = new Hangman(word,currentPlayer);
+		
 		return currentGame;
 	}
 
@@ -107,13 +94,13 @@ public class HangmanRunner {
 	}
 
 	private void saveGame() throws IOException {
-		String filename = "games for " + currentPlayer.getName();
+		String filename = "games- " + currentPlayer.getName();
 		serialize(currentGame, filename);
 	}
 
 	private Hangman loadGame() throws FileNotFoundException, ClassNotFoundException, IOException {
 
-		String filename = "games for " + currentPlayer.getName();
+		String filename = "games- " + currentPlayer.getName();
 		return deserialize(filename);
 	}
 
@@ -131,14 +118,13 @@ public class HangmanRunner {
 	
 
 	private void saveDictionary() throws IOException {
-		String filename = "dictionary for " + currentPlayer.getName();
+		String filename = "dictionary-" + currentPlayer.getName();
 		serialize(this.dictionary, filename);
 	}
 
 	private Dictionary loadDictionary() throws FileNotFoundException, ClassNotFoundException, IOException {
 
-
-		String filename = "dictionary for " + currentPlayer.getName();
+		String filename = "dictionary-" + currentPlayer.getName();
 		dictionary = deserialize(filename);
 		if (dictionary == null)
 			serialize(DEFAULT_DICTIONARY, filename);
@@ -148,46 +134,33 @@ public class HangmanRunner {
 
 
 
-	public void serialize(Object obj, String filename) {
+	private static void serialize(Object object, String filename) throws IOException {
+		if (object == null)
+			return;
 		try (FileOutputStream fileOut = new FileOutputStream(filename)) {
 			try (ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
-				out.writeObject(obj);
-				out.close();
-				System.out.println("Serialized data is saved in " + filename);
-			} catch (IOException i) {
-				i.printStackTrace();
+				out.writeObject(object);
 			}
-			fileOut.close();
-		} catch (IOException i) {
-			i.printStackTrace();
 		}
+		System.out.println("Serialized data is saved in " + filename);
 	}
 
-	public <T> T deserialize(String filename) throws IOException, FileNotFoundException {
-		T temp = null;
+	@SuppressWarnings("unchecked")
+	private static <T> T deserialize(String filename)
+			throws FileNotFoundException, IOException, ClassNotFoundException {
 		File file = new File(filename);
 		if (!file.exists())
 			return null;
+
 		try (FileInputStream fileIn = new FileInputStream(filename)) {
 			try (ObjectInputStream in = new ObjectInputStream(fileIn)) {
-				temp = (T) in.readObject();
-				in.close();
-			} catch (IOException i) {
-				i.printStackTrace();
-			} catch (ClassNotFoundException c) {
-				System.out.println("class not found");
-				c.printStackTrace();
+				return (T) in.readObject();
+			} catch (InvalidClassException ex) {
+				file.delete();
+				return null;
 			}
-			fileIn.close();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
-		return temp;
 	}
 	
-	public static void main(String[] args) throws ClassNotFoundException, IOException {
-		HangmanRunner hRunner = new HangmanRunner();
-		hRunner.playGame("zrt");
-		
-	}
+	
 }

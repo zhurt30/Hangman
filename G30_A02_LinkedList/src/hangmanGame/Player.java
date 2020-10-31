@@ -1,22 +1,31 @@
 package hangmanGame;
 
-public class Player implements java.io.Serializable {
+import java.io.Serializable;
+
+public class Player implements Serializable {
 	private String name;
 	private int numberGamesPlayed;
 	private int numberGamesWon;
 	
 	public Player() {
-		super();
+		
+			this(null);
+		
 	}
 	public Player(String name) {
 		super();
-		this.name = name;
+		setName(name);
+		this.numberGamesWon = getNumberGamesWon();
+		this.numberGamesPlayed=getNumberGamesPlayed();
 	}
 	
 	public String getName() {
 		return name;
 	}
-	public void setName(String name) {
+	public void setName(String name)   {
+		
+		if(name == null || name.length() ==0)
+			throw new IllegalArgumentException("Player name is null.");
 		this.name = name;
 	}
 	public int getNumberGamesPlayed() {
